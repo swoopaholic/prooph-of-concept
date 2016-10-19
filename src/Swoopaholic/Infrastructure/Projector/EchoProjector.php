@@ -1,5 +1,5 @@
 <?php
-namespace Swoopaholic\Infrastructure;
+namespace Swoopaholic\Infrastructure\Projector;
 
 class EchoProjector
 {

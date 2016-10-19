@@ -1,7 +1,7 @@
 <?php
 namespace Swoopaholic\Domain;
 
-class EchoText
+class AddText
 {
     private $text;
     private $streamId;

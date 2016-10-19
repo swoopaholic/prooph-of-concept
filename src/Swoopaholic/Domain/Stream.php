@@ -1,7 +1,7 @@
 <?php
 namespace Swoopaholic\Domain;
 
-class Stream
+class Stream implements AggregateRoot
 {
     private $streamId;
 
@@ -14,6 +14,11 @@ class Stream
         $this->streamId = $streamId;
     }
 
+    public function getId()
+    {
+        return $this->streamId;
+    }
+
     public function addText($text)
     {
         $this->recordThat(new TextWasAddedToStream($this->streamId, $text));
@@ -23,6 +28,11 @@ class Stream
     public function getRecordedEvents()
     {
         return $this->lastRecordedEvents;
+    }
+
+    public function clearRecordedEvents()
+    {
+        $this->lastRecordedEvents = [];
     }
 
     private function recordThat($event)
