@@ -3,7 +3,6 @@ namespace Swoopaholic\Domain;
 
 interface AggregateRoot
 {
-    public function getRecordedEvents();
-
-    public function clearRecordedEvents();
+    public function popRecordedEvents(): array;
+    public static function reconstituteFromHistory(\Iterator $historyEvents);
 }

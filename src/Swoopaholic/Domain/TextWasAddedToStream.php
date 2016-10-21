@@ -1,8 +1,7 @@
 <?php
-
 namespace Swoopaholic\Domain;
 
-class TextWasAddedToStream
+class TextWasAddedToStream implements Serializable
 {
     private $id;
     private $text;
@@ -13,19 +12,26 @@ class TextWasAddedToStream
         $this->text = $text;
     }
 
-    /**
-     * @return mixed
-     */
     public function getId()
     {
         return $this->id;
     }
 
-    /**
-     * @return mixed
-     */
     public function getText()
     {
         return $this->text;
+    }
+
+    public function serialize() : array
+    {
+        return [
+            'id' => $this->id,
+            'text' => $this->text
+        ];
+    }
+
+    public static function deserialize($data)
+    {
+        return new self($data['id'], $data['text']);
     }
 }

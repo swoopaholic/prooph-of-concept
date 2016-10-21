@@ -6,9 +6,6 @@ use Swoopaholic\Domain\Stream;
 
 class HandleAddText
 {
-    /**
-     * @var StreamRepository
-     */
     private $repository;
 
     public function __construct(StreamRepository $repository)
@@ -18,14 +15,21 @@ class HandleAddText
 
     public function handle(AddText $command)
     {
-        $aggregate = $this->repository->get($command->getStreamId());
+        $stream = $this->getStream($command->getStreamId());
 
-        if (is_null($aggregate)) {
-            $aggregate = new Stream($command->getStreamId());
+        $stream->addText($command->getText());
+        $this->repository->commit();
+    }
+
+    private function getStream($id): Stream
+    {
+        $stream = $this->repository->get($id);
+
+        if (is_null($stream)) {
+            $this->repository->add(Stream::start($id));
+            $stream = $this->repository->get($id);
         }
 
-        $aggregate->addText($command->getText());
-
-        $this->repository->commit($aggregate);
+        return $stream;
     }
 }

@@ -4,6 +4,13 @@ namespace Swoopaholic\Infrastructure\DependencyInjection;
 use Acclimate\Container\ContainerAcclimator;
 use Pimple\Container;
 use Pimple\ServiceProviderInterface;
+use Prooph\Common\Event\ProophActionEventEmitter;
+use Prooph\EventStore\Adapter\InMemoryAdapter;
+use Prooph\EventStore\Aggregate\AggregateType;
+use Prooph\EventStore\Aggregate\ConfigurableAggregateTranslator;
+use Prooph\EventStore\EventStore;
+use Prooph\EventStore\Stream\Stream;
+use Prooph\EventStore\Stream\StreamName;
 use Prooph\ServiceBus\CommandBus;
 use Prooph\ServiceBus\EventBus;
 use Prooph\ServiceBus\Plugin\InvokeStrategy\HandleCommandStrategy;
@@ -11,7 +18,11 @@ use Prooph\ServiceBus\Plugin\InvokeStrategy\OnEventStrategy;
 use Prooph\ServiceBus\Plugin\Router\CommandRouter;
 use Prooph\ServiceBus\Plugin\Router\EventRouter;
 use Prooph\ServiceBus\Plugin\ServiceLocatorPlugin;
+use Rhumsaa\Uuid\Uuid;
 use Swoopaholic\Application\HandleAddText;
+use Swoopaholic\Infrastructure\EventStore\EventPublisher;
+use Swoopaholic\Infrastructure\EventStore\Message;
+use Swoopaholic\Infrastructure\EventStore\MessageFactory;
 use Swoopaholic\Infrastructure\Projector\EchoProjector;
 use Swoopaholic\Infrastructure\Repository\StreamRepository;
 
@@ -25,18 +36,19 @@ class ServiceProvider implements ServiceProviderInterface
         $this->registerCommandHandlers($pimple);
         $this->registerEventHandlers($pimple);
 
-        $this->buildCommandRouter($pimple);
+        $this->registerCommandRouter($pimple);
         $this->registerCommandRoutes($pimple);
-        $this->buildCommandBus($pimple, $container);
+        $this->registerCommandBus($pimple, $container);
 
-        $this->buildEventRouter($pimple);
+        $this->registerEventRouter($pimple);
         $this->registerEventRoutes($pimple);
-        $this->buildEventBus($pimple, $container);
+        $this->registerEventBus($pimple, $container);
 
+        $this->registerEventStore($pimple);
         $this->registerRepositories($pimple);
     }
 
-    private function buildCommandRouter($pimple)
+    private function registerCommandRouter($pimple)
     {
         $pimple['command_router'] = function($c) {
             $router = new CommandRouter($c['command_routes']);
@@ -53,7 +65,7 @@ class ServiceProvider implements ServiceProviderInterface
         };
     }
 
-    private function buildCommandBus($pimple, $container)
+    private function registerCommandBus($pimple, $container)
     {
         $pimple['command_bus'] = function($c) use ($container) {
             $commandBus = new CommandBus();
@@ -64,7 +76,7 @@ class ServiceProvider implements ServiceProviderInterface
         };
     }
 
-    private function buildEventRouter($pimple)
+    private function registerEventRouter($pimple)
     {
         $pimple['event_router'] = function($c) {
             $router = new EventRouter($c['event_routes']);
@@ -81,7 +93,7 @@ class ServiceProvider implements ServiceProviderInterface
         };
     }
 
-    private function buildEventBus($pimple, $container)
+    private function registerEventBus($pimple, $container)
     {
         $pimple['event_bus'] = function($c) use ($container) {
             $eventBus = new EventBus();
@@ -111,7 +123,50 @@ class ServiceProvider implements ServiceProviderInterface
     private function registerRepositories($pimple)
     {
         $pimple['stream_repository'] = function($c) {
-            return new StreamRepository($c['event_bus']);
+            /** @var EventStore $eventStore */
+            $eventStore = $c['event_store'];
+            $eventStore->beginTransaction();
+            $eventStore->create(new Stream(new StreamName('event_stream'), new \ArrayIterator()));
+            $eventStore->commit();
+
+            return new StreamRepository(
+                $eventStore,
+                AggregateType::fromAggregateRootClass('Swoopaholic\Domain\Stream'),
+                $c['event_store.aggregate_translator']
+            );
+        };
+    }
+
+    private function registerEventStore($container)
+    {
+        $container['event_store'] = function($c) {
+            $eventStore = new EventStore(new InMemoryAdapter(), new ProophActionEventEmitter());
+
+            $publisher = new EventPublisher($c['event_bus']);
+            $publisher->setUp($eventStore);
+
+            return $eventStore;
+        };
+
+        $container['event_store.aggregate_translator'] = function($c) {
+            $factoryFunction = function($message) {
+                return new Message(get_class($message), $message->serialize());
+            };
+
+            $convertFunction = function($message) {
+                $class = $message->messageName();
+                return $class::deserialize($message->payload());
+            };
+
+            return new ConfigurableAggregateTranslator(
+                null,
+                null,
+                null,
+                null,
+                null,
+                $factoryFunction,
+                $convertFunction
+            );
         };
     }
 }

@@ -3,27 +3,21 @@ namespace Swoopaholic\Domain;
 
 class AddText
 {
-    private $text;
     private $streamId;
+    private $text;
 
     public function __construct($streamId, $text)
     {
-        $this->text = $text;
         $this->streamId = $streamId;
+        $this->text = $text;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getStreamId()
+    public function getStreamId(): string
     {
         return $this->streamId;
     }
 
-    /**
-     * @return mixed
-     */
-    public function getText()
+    public function getText(): string
     {
         return $this->text;
     }

@@ -1,36 +1,27 @@
 <?php
 namespace Swoopaholic\Infrastructure\Repository;
 
-use Prooph\ServiceBus\EventBus;
+use Prooph\EventStore\Aggregate\AggregateRepository;
 use Swoopaholic\Application\StreamRepository as StreamRepositoryInterface;
-use Swoopaholic\Domain\AggregateRoot;
 
-class StreamRepository implements StreamRepositoryInterface
+class StreamRepository extends AggregateRepository  implements StreamRepositoryInterface
 {
-    private $aggregates = [];
-    /**
-     * @var EventBus
-     */
-    private $eventBus;
-
-    public function __construct(EventBus $eventBus)
-    {
-        $this->eventBus = $eventBus;
-    }
-
-    public function commit(AggregateRoot $aggregate)
-    {
-        // todo... replace with event store
-        foreach ($aggregate->getRecordedEvents() as $event) {
-            $this->eventBus->dispatch($event);
-        }
-        $aggregate->clearRecordedEvents();
-
-        $this->aggregates[$aggregate->getId()] = $aggregate;
-    }
-
     public function get($id)
     {
-        return isset($this->aggregates[$id]) ? $this->aggregates[$id] : null;
+        return $this->getAggregateRoot($id);
+    }
+
+    public function add($stream)
+    {
+        $this->eventStore->beginTransaction();
+        $this->addAggregateRoot($stream);
+        $this->eventStore->commit();
+    }
+
+    public function commit()
+    {
+        $this->eventStore->beginTransaction();
+        $this->addPendingEventsToStream();
+        $this->eventStore->commit();
     }
 }
