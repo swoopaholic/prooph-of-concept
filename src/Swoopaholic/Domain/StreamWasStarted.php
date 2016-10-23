@@ -22,8 +22,11 @@ class StreamWasStarted implements Serializable
         ];
     }
 
-    public static function deserialize($data)
+    public static function fromSerializedData($data)
     {
-        return new self($data['id']);
+        $ref = new \ReflectionClass(self::class);
+        $object = $ref->newInstanceWithoutConstructor();
+        $object->id = $data['id'];
+        return $object;
     }
 }

@@ -30,8 +30,12 @@ class TextWasAddedToStream implements Serializable
         ];
     }
 
-    public static function deserialize($data)
+    public static function fromSerializedData($data)
     {
-        return new self($data['id'], $data['text']);
+        $ref = new \ReflectionClass(self::class);
+        $object = $ref->newInstanceWithoutConstructor();
+        $object->id = $data['id'];
+        $object->text = $data['text'];
+        return $object;
     }
 }

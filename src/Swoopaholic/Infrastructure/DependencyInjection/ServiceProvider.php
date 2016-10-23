@@ -18,11 +18,10 @@ use Prooph\ServiceBus\Plugin\InvokeStrategy\OnEventStrategy;
 use Prooph\ServiceBus\Plugin\Router\CommandRouter;
 use Prooph\ServiceBus\Plugin\Router\EventRouter;
 use Prooph\ServiceBus\Plugin\ServiceLocatorPlugin;
-use Rhumsaa\Uuid\Uuid;
 use Swoopaholic\Application\HandleAddText;
+use Swoopaholic\Domain\Serializable;
 use Swoopaholic\Infrastructure\EventStore\EventPublisher;
 use Swoopaholic\Infrastructure\EventStore\Message;
-use Swoopaholic\Infrastructure\EventStore\MessageFactory;
 use Swoopaholic\Infrastructure\Projector\EchoProjector;
 use Swoopaholic\Infrastructure\Repository\StreamRepository;
 
@@ -153,9 +152,10 @@ class ServiceProvider implements ServiceProviderInterface
                 return new Message(get_class($message), $message->serialize());
             };
 
-            $convertFunction = function($message) {
+            $convertFunction = function(Message $message) {
+                /** @var Serializable $class */
                 $class = $message->messageName();
-                return $class::deserialize($message->payload());
+                return $class::fromSerializedData($message->payload());
             };
 
             return new ConfigurableAggregateTranslator(

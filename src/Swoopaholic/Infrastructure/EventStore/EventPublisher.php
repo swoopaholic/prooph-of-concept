@@ -5,6 +5,7 @@ use Prooph\Common\Event\ActionEvent;
 use Prooph\EventStore\EventStore;
 use Prooph\EventStore\Plugin\Plugin;
 use Prooph\ServiceBus\EventBus;
+use Swoopaholic\Domain\Serializable;
 
 final class EventPublisher implements Plugin
 {
@@ -30,9 +31,10 @@ final class EventPublisher implements Plugin
         }
     }
 
-    private function convert($message)
+    private function convert(Message $message)
     {
+        /** @var Serializable $class */
         $class = $message->messageName();
-        return $class::deserialize($message->payload());
+        return $class::fromSerializedData($message->payload());
     }
 }
