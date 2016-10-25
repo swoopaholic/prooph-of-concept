@@ -1,18 +1,25 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Domain;
 
-class StreamWasStarted implements Serializable
+final class StreamWasStarted implements Serializable
 {
     private $id;
 
-    public function __construct($id)
+    public function __construct(StreamId $id)
     {
-        $this->id = $id;
+        $this->id = (string) $id;
     }
 
     public function getId()
     {
-        return $this->id;
+        return new StreamId($this->id);
+    }
+
+    public function getName(): string
+    {
+        return 'swoopaholic.text_stream.StreamWasStarted';
     }
 
     public function serialize() : array

@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Infrastructure\DependencyInjection;
 
 use Acclimate\Container\ContainerAcclimator;
@@ -23,9 +25,9 @@ use Swoopaholic\Domain\Serializable;
 use Swoopaholic\Infrastructure\EventStore\EventPublisher;
 use Swoopaholic\Infrastructure\EventStore\Message;
 use Swoopaholic\Infrastructure\Projector\EchoProjector;
-use Swoopaholic\Infrastructure\Repository\StreamRepository;
+use Swoopaholic\Infrastructure\Repository\StreamAggregateRepository;
 
-class ServiceProvider implements ServiceProviderInterface
+final class ServiceProvider implements ServiceProviderInterface
 {
     public function register(Container $pimple)
     {
@@ -59,7 +61,7 @@ class ServiceProvider implements ServiceProviderInterface
     {
         $pimple['command_routes'] = function($c) {
             return [
-                'Swoopaholic\Domain\AddText' => 'add_text.handler'
+                'Swoopaholic\Application\AddText' => 'add_text.handler'
             ];
         };
     }
@@ -128,7 +130,7 @@ class ServiceProvider implements ServiceProviderInterface
             $eventStore->create(new Stream(new StreamName('event_stream'), new \ArrayIterator()));
             $eventStore->commit();
 
-            return new StreamRepository(
+            return new StreamAggregateRepository(
                 $eventStore,
                 AggregateType::fromAggregateRootClass('Swoopaholic\Domain\Stream'),
                 $c['event_store.aggregate_translator']
@@ -148,13 +150,17 @@ class ServiceProvider implements ServiceProviderInterface
         };
 
         $container['event_store.aggregate_translator'] = function($c) {
-            $factoryFunction = function($message) {
-                return new Message(get_class($message), $message->serialize());
+            $factoryFunction = function(Serializable $message) {
+                return new Message(
+                    $message->getName(),
+                    $message->serialize(),
+                    ['metadata' => ['class' => get_class($message)]]
+                );
             };
 
             $convertFunction = function(Message $message) {
                 /** @var Serializable $class */
-                $class = $message->messageName();
+                $class = $message->metadata()['class'];
                 return $class::fromSerializedData($message->payload());
             };
 

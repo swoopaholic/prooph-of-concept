@@ -1,22 +1,31 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Application;
 
-use Swoopaholic\Domain\AddText;
+use Assert\Assertion;
 use Swoopaholic\Domain\Stream;
 
-class HandleAddText
+final class HandleAddText
 {
     private $repository;
 
-    public function __construct(StreamRepository $repository)
+    public function __construct(Repository $repository)
     {
         $this->repository = $repository;
     }
 
     public function handle(AddText $command)
     {
-        $stream = $this->getStream($command->getStreamId());
+        // application restricts input to at least 1 character
+        // so we place this in the handler and not in domain objects!
+        // otherwise, changing application restrictions might cause
+        // problems replaying events
+        Assertion::minLength(
+            (string) $command->getText(), 1, 'Text added to the stream must have at least 1 character'
+        );
 
+        $stream = $this->getStream($command->getStreamId());
         $stream->addText($command->getText());
         $this->repository->commit();
     }

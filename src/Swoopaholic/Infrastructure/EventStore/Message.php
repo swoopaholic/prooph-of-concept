@@ -1,10 +1,12 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Infrastructure\EventStore;
 
 use Prooph\Common\Messaging\Message as MessageInterface;
 use Rhumsaa\Uuid\Uuid;
 
-class Message implements MessageInterface
+final class Message implements MessageInterface
 {
     private $uuid;
     private $name;
@@ -14,12 +16,13 @@ class Message implements MessageInterface
     private $metadata = [];
     private $version = '1';
 
-    public function __construct($name, array $payload = [])
+    public function __construct($name, array $payload = [], array $options = [])
     {
         $this->uuid = Uuid::uuid4();
         $this->name = $name;
         $this->payload = $payload;
         $this->createdAt = new \DateTimeImmutable();
+        $this->metadata = isset($options['metadata']) ? $options['metadata'] : $this->metadata;
     }
 
     public function messageName()

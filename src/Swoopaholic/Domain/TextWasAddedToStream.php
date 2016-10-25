@@ -1,25 +1,32 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Domain;
 
-class TextWasAddedToStream implements Serializable
+final class TextWasAddedToStream implements Serializable
 {
     private $id;
     private $text;
 
-    public function __construct($id, $text)
+    public function __construct(StreamId $id, Text $text)
     {
-        $this->id = $id;
-        $this->text = $text;
+        $this->id = (string) $id;
+        $this->text = (string) $text;
     }
 
     public function getId()
     {
-        return $this->id;
+        return new StreamId($this->id);
     }
 
     public function getText()
     {
-        return $this->text;
+        return new Text($this->text);
+    }
+
+    public function getName(): string
+    {
+        return 'swoopaholic.text_stream.TextWasAddedToStream';
     }
 
     public function serialize() : array

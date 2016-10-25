@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Infrastructure\EventStore;
 
 use Prooph\Common\Event\ActionEvent;
@@ -34,7 +36,7 @@ final class EventPublisher implements Plugin
     private function convert(Message $message)
     {
         /** @var Serializable $class */
-        $class = $message->messageName();
+        $class = $message->metadata()['class'];
         return $class::fromSerializedData($message->payload());
     }
 }

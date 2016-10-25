@@ -1,14 +1,16 @@
 <?php
+declare(strict_types=1);
+
 namespace Swoopaholic\Infrastructure\Repository;
 
 use Prooph\EventStore\Aggregate\AggregateRepository;
-use Swoopaholic\Application\StreamRepository as StreamRepositoryInterface;
+use Swoopaholic\Application\Repository as RepositoryInterface;
 
-class StreamRepository extends AggregateRepository  implements StreamRepositoryInterface
+final class StreamAggregateRepository extends AggregateRepository implements RepositoryInterface
 {
     public function get($id)
     {
-        return $this->getAggregateRoot($id);
+        return $this->getAggregateRoot((string) $id);
     }
 
     public function add($stream)
